@@ -15,17 +15,20 @@ MAX_DATA_ROW = 1e6
 TRAINING_DATA_FOLDER = 'ctr_model/training_data/'
 MODEL_FOLDER = 'ctr_model/model/'
 DEFAULT_MODEL_LOCATION = 'gs://reemo/models/dev/test_duong/test_j14/'
+# DEFAULT_MODEL_LOCATION = 'D:/test_compare_tool/'
 PREDICT_FOLDER = 'ctr_model/predict/'
 
 MODEL_VERSION_INFO = {
     'v2p1_7_40':{
         'model_location': 'gs://reemo/models/dev/test_duong/test_j14/',
+        # 'model_location': 'D:/test_compare_tool/',
         'model_folder': '20180430_v2p1_7_40',
         'func_feature_names': preproc_data.get_names_features_v2p1,
         'func_extract_column': preproc_data.extract_column_to_feature
     },
     'v2p1p2_8_40_25f':{
         'model_location': 'gs://reemo/models/dev/test_duong/test_j14/',
+        # 'model_location': 'D:/test_compare_tool/',
         'model_folder': '20180430_v2p1p2_8_40_25f',
         'func_feature_names': preproc_data.get_names_features_v2p1p2,
         'func_extract_column': preproc_data.extract_column_to_feature
@@ -52,7 +55,7 @@ def get_evaluate_periods():
 
 # --- SUPPORT FUNCTION ---
 def get_training_data_folder():
-    return os.path.join(DEFAULT_MODEL_LOCATION, TRAINING_DATA_FOLDER)
+    return os.path.join(DEFAULT_MODEL_LOCATION, TRAINING_DATA_FOLDER).replace('\\','/')
 
 
 def get_data_location(spid, periods):
@@ -89,7 +92,7 @@ def get_prediction_folder():
 # --- ABSTRACT FUNCTION ------
 def get_model(model_version, spid, model_date):
     model_version_location = _get_model_version_folder(model_version)
-    model_path = os.path.join(model_version_location, 'ctr_model_spid%d_%s'%(spid, model_date))
+    model_path = os.path.join(model_version_location, 'ctr_model_spid%d_%s'%(spid, model_date)).replace('\\','/')
     return RandomForestClassificationModel.load(model_path)
 
 
@@ -119,19 +122,24 @@ def make_feature(df, version_name, convmap):
 
 
 def predict_with_multiple_version(df, versions, model_date, spid):
-    all_features = df.columns
     for version_name in versions:
         version_infor = MODEL_VERSION_INFO[version_name]
         convmaps = get_convmap_dics(version_name, model_date)
-        for k in convmaps[sponsor_id].keys():
-            df = df.withColumn(k + '_' + version_name, categorical_conv(convmaps[sponsor_id][k]))
+        for k in convmaps[str(sponsor_id)].keys():
+            df = df.withColumn(k + '_' + version_name, categorical_conv(convmaps[str(sponsor_id)][k])(col(k)))
         name_features = version_infor['func_feature_names'](df)
-        name_features = convert_name_features(name_features, version_name, list(convmaps[sponsor_id]))
-        df = VectorAssembler(inputCols=name_features, outputCol='features').transform(df)
+        name_features = convert_name_features(name_features, version_name, list(convmaps[str(sponsor_id)]))
+        df = VectorAssembler(inputCols=name_features, outputCol='features_%s'%version_name).transform(df)
+    print(df.columns)
+    predicted_list = []
+    for version_name in versions:
         model = get_model(version_name, spid, model_date)
         prob_col_name = 'prob_%s'%version_name
-        df = model.transform(df).withColumn(prob_col_name, col('probability')).select(all_features+[prob_col_name])
-    df = df.select(['is_click', 'dsp_id'] + ['prob_%s'%version_name for version_name in versions])
+        df = df.withColumn('features', col('features_%s'%version_name))
+        df = model.transform(df).withColumn(prob_col_name, UserDefinedFunction(lambda x: x.tolist()[1], DoubleType())(col('probability')))
+        predicted_list.append(version_name)
+        df = df.select(['is_click', 'dsp_id'] + ['prob_%s'%v for v in predicted_list] + ['features_%s'%v for v in versions])
+    df = df.select(['is_click', 'dsp_id'] + ['prob_%s'%v for v in versions])
     return df
 
 

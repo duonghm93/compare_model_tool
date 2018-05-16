@@ -18,15 +18,17 @@ def delete_cluster(cluster_name):
 
 
 if __name__ == '__main__':
-    cluster_name = 'check-hist-j14'
+    cluster_name = 'j14-seperate-predict-data'
+    import_files = ['preproc_data.py']
     create_cluster(cluster_name)
 
-    com_submit = 'check_hr_dow.py'
+    com_submit = 'compare_model.py'
 
     com = 'gcloud dataproc jobs submit pyspark --cluster %s' % cluster_name
     com += ' --properties'
     com += ' spark.executor.heartbeatInterval="4000s",spark.network.timeout="40000s"'
     com += ',spark.serializer=org.apache.spark.serializer.KryoSerializer'
+    com += ' --py-files %s' % ','.join(import_files)
     com += ' %s' % (com_submit)
     print(com)
     os.system(com)

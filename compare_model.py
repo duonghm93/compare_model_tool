@@ -6,7 +6,6 @@ from pyspark.sql.functions import col
 from pyspark.sql.types import DoubleType
 from pyspark.ml.feature import VectorAssembler
 import json
-import pickle
 import preproc_data
 
 # --- PARAM ---
@@ -125,10 +124,10 @@ def predict_with_multiple_version(df, versions, model_date, spid):
     for version_name in versions:
         version_infor = MODEL_VERSION_INFO[version_name]
         convmaps = get_convmap_dics(version_name, model_date)
-        for k in convmaps[str(sponsor_id)].keys():
-            df = df.withColumn(k + '_' + version_name, categorical_conv(convmaps[str(sponsor_id)][k])(col(k)))
+        for k in convmaps[str(spid)].keys():
+            df = df.withColumn(k + '_' + version_name, categorical_conv(convmaps[str(spid)][k])(col(k)))
         name_features = version_infor['func_feature_names'](df)
-        name_features = convert_name_features(name_features, version_name, list(convmaps[str(sponsor_id)]))
+        name_features = convert_name_features(name_features, version_name, list(convmaps[str(spid)]))
         df = VectorAssembler(inputCols=name_features, outputCol='features_%s'%version_name).transform(df)
     print(df.columns)
     predicted_list = []

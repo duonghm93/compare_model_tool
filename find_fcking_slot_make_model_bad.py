@@ -132,12 +132,12 @@ if __name__ == '__main__':
 
     df_akane_isclick = df_akane.filter(df_akane.is_click == 1).cache()
     df_akane_isclick_high_pred = df_akane_isclick.filter(
-        (col('prob_%s' % versions[0]) >= 0.0005) & (col('prob_%s' % versions[0]) <= 0.001)
+        (col('prob_%s' % versions[0]) >= HIGH_PRED_THRES)
     ).cache()
 
     df_akane_nonclick = df_akane.filter(df_akane.is_click == 0).cache()
     df_akane_nonclick_high_pred = df_akane_nonclick.filter(
-        (col('prob_%s' % versions[0]) >= 0.0005) & (col('prob_%s' % versions[0]) <= 0.001)
+        (col('prob_%s' % versions[0]) >= HIGH_PRED_THRES)
     ).cache()
 
     need_check_features = ['prob_man_stats', 'uu_ratio', 'ctr_user_avg', 'slot_sponsor_rt_stats', 'slot_sponsor_cv_stats']
@@ -145,19 +145,4 @@ if __name__ == '__main__':
     default_bins = [x*0.00001 for x in range(100001)]
 
     for feature in need_check_features:
-        # export_hist_file(
-        #     df_data=df_akane_isclick, field=feature,
-        #     title='akane_isclick', bins=default_bins
-        # )
-        export_hist_file(
-            df_data=df_akane_isclick_high_pred, field=feature,
-            title='akane_isclick_rank5', bins=default_bins
-        )
-        # export_hist_file(
-        #     df_data=df_akane_nonclick, field=feature,
-        #     title='akane_nonclick', bins=default_bins
-        # )
-        export_hist_file(
-            df_data=df_akane_nonclick_high_pred, field=feature,
-            title='akane_nonclick_rank5', bins=default_bins
-        )
+        df_akane_isclick_high_pred.select('ssp_id', 'slot_id').groupBy('ssp_id', 'slot_id').count()

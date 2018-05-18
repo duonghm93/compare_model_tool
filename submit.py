@@ -3,7 +3,7 @@ import os
 
 def create_cluster(cluster_name):
     cluster_option = '--image-version 1.1 --zone asia-east1-b ' \
-                     '--num-workers 6 --num-preemptible-workers 2 ' \
+                     '--num-workers 4 --num-preemptible-workers 2 ' \
                      '--master-machine-type n1-highmem-8 --master-boot-disk-size 500 ' \
                      '--worker-machine-type n1-highmem-8 --worker-boot-disk-size 500 ' \
                      '--scopes https://www.googleapis.com/auth/cloud-platform ' \
@@ -22,7 +22,8 @@ if __name__ == '__main__':
     import_files = ['preproc_data.py']
     create_cluster(cluster_name)
 
-    com_submit = 'compare_model.py'
+    # com_submit = 'compare_model.py'
+    com_submit = 'eval_and_extract_hist.py'
 
     com = 'gcloud dataproc jobs submit pyspark --cluster %s' % cluster_name
     com += ' --properties'

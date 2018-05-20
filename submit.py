@@ -7,7 +7,8 @@ def create_cluster(cluster_name):
                      '--master-machine-type n1-highmem-8 --master-boot-disk-size 500 ' \
                      '--worker-machine-type n1-highmem-8 --worker-boot-disk-size 500 ' \
                      '--scopes https://www.googleapis.com/auth/cloud-platform ' \
-                     '--project reemo-173606 --properties yarn:yarn.log-aggregation-enable=true '
+                     '--project reemo-173606 --properties yarn:yarn.log-aggregation-enable=true ' \
+                     '--initialization-actions gs://reemo/models/dev/test_duong/install_pandas_numpy.sh '
     create_cluster_com = 'gcloud dataproc clusters create %s %s' % (cluster_name, cluster_option)
     os.system(create_cluster_com)
 
@@ -23,7 +24,7 @@ if __name__ == '__main__':
     create_cluster(cluster_name)
 
     # com_submit = 'compare_model.py'
-    com_submit = 'eval_and_extract_hist.py'
+    com_submit = 'find_fcking_slot_make_model_bad.py'
 
     com = 'gcloud dataproc jobs submit pyspark --cluster %s' % cluster_name
     com += ' --properties'

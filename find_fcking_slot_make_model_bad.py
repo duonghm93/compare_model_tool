@@ -7,20 +7,19 @@ from pyspark.sql.types import DoubleType
 from pyspark.ml.feature import VectorAssembler
 import json
 import preproc_data
-import pickle
 
 
 # <editor-fold desc="Location manager">
 MODEL_VERSION_INFO = {
     'v2p1_7_40':{
-        # 'model_location': 'C:/Users/hoang/Desktop/check_25f_abnormal/',
+        # 'model_location': 'D:/test_compare_tool/',
         'model_location': 'gs://reemo/models/dev/test_duong/test_j14/',
         'model_folder': '20180430_v2p1_7_40',
         'func_feature_names': preproc_data.get_names_features_v2p1,
         'func_extract_column': preproc_data.extract_column_to_feature
     },
     'v2p1p2_10_80_25f':{
-        # 'model_location': 'C:/Users/hoang/Desktop/check_25f_abnormal/',
+        # 'model_location': 'D:/test_compare_tool/',
         'model_location': 'gs://reemo/models/dev/test_duong/test_j14/',
         'model_folder': '20180430_v2p1p2_10_80_25f_remake',
         'func_feature_names': preproc_data.get_names_features_v2p1p2,
@@ -28,7 +27,7 @@ MODEL_VERSION_INFO = {
     }
 }
 MODEL_FOLDER = 'ctr_model/model/'
-# DEFAULT_GCS_FOLDER = 'C:/Users/hoang/Desktop/check_25f_abnormal/'
+# DEFAULT_GCS_FOLDER = 'D:/test_compare_tool/'
 DEFAULT_GCS_FOLDER = 'gs://reemo/models/dev/test_duong/test_j14/'
 
 
@@ -109,17 +108,9 @@ def predict_with_multiple_version(df, versions, model_date, spid):
 #</editor-fold>
 
 
-def export_hist_file(df_data, field, title, bins):
-    hist_data = df_data.select(field).rdd.flatMap(lambda x: x).histogram(buckets=bins)
-    local_fn = '%d_%s_%s.hist' %(46, field, title)
-    gcs_fn = os.path.join(get_hist_folder_location(), local_fn).replace('\\','/')
-    pickle.dump(hist_data, open(local_fn,'wb'))
-    os.system('gsutil cp -r %s %s'%(local_fn, gcs_fn))
-
-
 if __name__ == '__main__':
     spark = SparkSession.builder.appName("check_data").getOrCreate()
-    versions = ['v2p1_7_40']
+    versions = ['v2p1p2_10_80_25f']
     HIGH_PRED_THRES = 0.01
 
     eval_data_location = get_eval_data_location()
@@ -140,9 +131,15 @@ if __name__ == '__main__':
         (col('prob_%s' % versions[0]) >= HIGH_PRED_THRES)
     ).cache()
 
-    need_check_features = ['prob_man_stats', 'uu_ratio', 'ctr_user_avg', 'slot_sponsor_rt_stats', 'slot_sponsor_cv_stats']
+    gcs_result_folder = 'gs://reemo/models/dev/test_duong/test_j14/10_80_25f_analyze/'
+    # gcs_result_folder = 'D:/test_compare_tool/10_80_25f_analyze/'
 
-    default_bins = [x*0.00001 for x in range(100001)]
+    df_slot_isclick_high = df_akane_isclick_high_pred.select('ssp_id', 'slot_id').groupBy('ssp_id', 'slot_id').count().cache()
+    fn_isclick_high = 'spid46_10_80_25f_isclick_highctr.csv'
+    df_slot_isclick_high.toPandas().to_csv('spid46_10_80_25f_isclick_highctr.csv', index=None)
+    os.system('gsutil cp %s %s' %(fn_isclick_high, gcs_result_folder+fn_isclick_high))
 
-    for feature in need_check_features:
-        df_akane_isclick_high_pred.select('ssp_id', 'slot_id').groupBy('ssp_id', 'slot_id').count()
+    df_slot_nonclick_high = df_akane_nonclick_high_pred.select('ssp_id', 'slot_id').groupBy('ssp_id', 'slot_id').count().cache()
+    fn_nonclick_high = 'spid46_10_80_25f_nonclick_highctr.csv'
+    df_slot_nonclick_high.toPandas().to_csv('spid46_10_80_25f_nonclick_highctr.csv', index=None)
+    os.system('gsutil cp %s %s' % (fn_nonclick_high, gcs_result_folder + fn_nonclick_high))

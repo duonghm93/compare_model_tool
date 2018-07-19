@@ -20,24 +20,24 @@ def load_data(files, modify_func):
             result[spid][data_type] = {}
         result[spid][data_type][field_name] = modify_func(hist)
     return result
-	
+    
 
 def convert_norm_hist(hist):
     freqency = hist[1]
     total_size = sum(freqency)
     norm_fq = [count/total_size for count in freqency]
     return (hist[0], norm_fq)
-	
+    
 
 def get_hist_bar_plot(hist, width=None):
     if width is None:
         width = hist[0][1]-hist[0][0]
     return plt.bar(hist[0][:-1], hist[1], width=width)
-	
+    
 
 def get_hist(hist_dic, spid, data_type, field):
     return hist_dic[str(spid)][data_type][field]
-	
+    
 
 def calc_pdf(hist):    
     fq = hist[1]
@@ -45,7 +45,7 @@ def calc_pdf(hist):
     pdf = np.cumsum(fq)    
     pdf = [csum/total_size for csum in pdf]    
     return (hist[0], pdf)
-	
+    
 
 def get_part_hist(hist, min_bin_value, max_bin_value):
     def _get_first_larger_pos(lst, val):
@@ -58,7 +58,7 @@ def get_part_hist(hist, min_bin_value, max_bin_value):
     part_bins = bins[first_bin_pos:last_bin_pos]
     part_fq = fq[first_bin_pos:last_bin_pos-1]
     return (part_bins, part_fq)
-	
+    
 
 # def check_field_by_bar(hist_dic, spid, field):
 #     hist_click = get_hist(hist_dic, spid, 'isclick', field)
@@ -70,16 +70,16 @@ def get_part_hist(hist, min_bin_value, max_bin_value):
 #     plt.legend([bar_click, bar_nonclick], ['click', 'nonclick'])
 #     plt.show()
 #     plt.close()
-	
-	
+    
+    
 def get_merge_fq(hist, min_bin, max_bin):
     part_hist = get_part_hist(hist, min_bin, max_bin)
     return sum(part_hist[1])
 
-	
+    
 def get_chunks(l, chunk_size):
     return [l[i:i+chunk_size] for i in range(0,len(l),chunk_size)]
-	
+    
 
 def get_merge_hist(hist, bin_size):
     bins = hist[0]
@@ -93,8 +93,8 @@ def get_merge_hist(hist, bin_size):
     else:
         print('bin_size is too small')
         return hist
-		
-		
+        
+        
 def check_field_by_line(hist_dic, spid, field, min_bin=0.0, max_bin=1.0, x_tick_num=20, merge_bin_size=None):     
     step = (max_bin-min_bin)/x_tick_num
     x_ticks = [min_bin+x*step for x in range(x_tick_num+1)]
@@ -126,7 +126,7 @@ def check_field_by_line(hist_dic, spid, field, min_bin=0.0, max_bin=1.0, x_tick_
 #     fig.savefig('%d_%s.png'%(spid,field), dpi=600)
     plt.show()    
     plt.close()
-	
+    
 
 def check_field_by_bar(hist_dic, spid, field, min_bin=0.0, max_bin=1.0, x_tick_num=20, merge_bin_size=None):     
     step = (max_bin-min_bin)/x_tick_num
@@ -159,8 +159,8 @@ def check_field_by_bar(hist_dic, spid, field, min_bin=0.0, max_bin=1.0, x_tick_n
 #     fig.savefig('%d_%s.png'%(spid,field), dpi=600)
     plt.show()    
     plt.close()
-	
-	
+    
+    
 def show_hist_by_line(hist, min_bin=0.0, max_bin=1.0, merge_bin_size=None, x_tick_num=20):
     step = (max_bin-min_bin)/x_tick_num
     x_ticks = [min_bin+x*step for x in range(x_tick_num+1)]
@@ -174,8 +174,8 @@ def show_hist_by_line(hist, min_bin=0.0, max_bin=1.0, merge_bin_size=None, x_tic
     ax.plot(hist[0][:-1], hist[1])    
     plt.show()
     plt.close()
-	
-	
+    
+    
 def show_hist_by_bar(hist, min_bin=0.0, max_bin=1.0, merge_bin_size=None, x_tick_num=20):
     step = (max_bin-min_bin)/x_tick_num
     x_ticks = [min_bin+x*step for x in range(x_tick_num+1)]
@@ -189,3 +189,52 @@ def show_hist_by_bar(hist, min_bin=0.0, max_bin=1.0, merge_bin_size=None, x_tick
     ax.bar(hist[0][:-1], hist[1], width=merge_bin_size)    
     plt.show()
     plt.close()
+    
+
+def show_multiple_hists_by_line(hists, labels=None, colors=None, min_bin=0.0, max_bin=1.0, merge_bin_size=None, x_tick_num=20):
+    step = (max_bin-min_bin)/x_tick_num
+    x_ticks = [min_bin+x*step for x in range(x_tick_num+1)]
+    fig, ax = plt.subplots(figsize=(15,5))
+    ax.grid()
+    ax.set_xticks(x_ticks)
+    for i, hist in enumerate(hists):
+        if merge_bin_size is not None:
+            hist = get_merge_hist(hist, merge_bin_size)
+        if min_bin != 0.0 or max_bin != 1.0:
+            hist = get_part_hist(hist, min_bin, max_bin)
+        if labels is not None:
+            label = labels[i]
+        if colors is not None:
+            color = colors[i]
+        ax.plot(hist[0][:-1], hist[1], label=label, color=color, alpha=0.5)
+    plt.legend()
+    plt.show()
+    plt.close()
+    
+    
+def show_multiple_hists_by_bar(hists, labels=None, colors=None, min_bin=0.0, max_bin=1.0, merge_bin_size=None, x_tick_num=20):
+    step = (max_bin-min_bin)/x_tick_num
+    x_ticks = [min_bin+x*step for x in range(x_tick_num+1)]
+    fig, ax = plt.subplots(figsize=(15,5))
+    ax.grid()
+    ax.set_xticks(x_ticks)
+    for i, hist in enumerate(hists):
+        if merge_bin_size is not None:
+            hist = get_merge_hist(hist, merge_bin_size)
+        if min_bin != 0.0 or max_bin != 1.0:
+            hist = get_part_hist(hist, min_bin, max_bin)
+        if labels is not None:
+            label = labels[i]
+        if colors is not None:
+            color = colors[i]
+        ax.bar(hist[0][:-1], hist[1], width=merge_bin_size, label=label, color=color, alpha=0.5)
+    plt.legend()
+    plt.show()
+    plt.close()
+	
+
+def get_small_hist(filename, thres=1000000):
+    hist = pickle.load(open(filename, 'rb'))
+    hist = hist_util.convert_norm_hist(hist)
+    hist = (hist[0][:thres+1], hist[1][:thres])
+    return hist

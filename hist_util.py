@@ -235,6 +235,6 @@ def show_multiple_hists_by_bar(hists, labels=None, colors=None, min_bin=0.0, max
 
 def get_small_hist(filename, thres=1000000):
     hist = pickle.load(open(filename, 'rb'))
-    hist = hist_util.convert_norm_hist(hist)
+    hist = convert_norm_hist(hist)
     hist = (hist[0][:thres+1], hist[1][:thres])
     return hist
